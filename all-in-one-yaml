@@ -1,0 +1,2758 @@
+Deployment-recreate ====================================Receate ==================
+apiVersion: app/v1
+Kind: Deployment
+metadata:
+  name: mavenwebapp
+  namespace: test-ns
+spec:
+  replicas: 2
+  revisonHistoryLimit: 5
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: mavenwebaap
+  template:
+    metadata: 
+      name: mavenwebpod
+      labels:
+        app: mavenwebapp
+    spec:
+      containers:
+      - name: mavenwebappcontainer
+        image: docker/maven-web-application:1
+        ports:
+        - containerPort: 8080
+---
+apiVersion: v1
+Kind: service
+metadata:
+  name: mavenwebappsvc
+  namespace: test-ns
+spec:
+  type: Nodeport
+  selector:
+    app: mavenwebapp
+  ports:
+  - port: 80
+    targetPort: 8080
+=============================================================
+Deplyment ================
+apiVersion: app/v1
+kind: Deployment
+metadata:
+  name: mavenwebapp
+  namespace: test-ns
+spec:
+  replicas: 2
+  rivisonHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+	rollingUpdate:
+	  maxUnavailable:1
+	  maxSurge: 1
+  minReadySeconds: 30	  
+  selector:
+    matchLabels:
+      app: mavenwebapp
+  template:
+    metadata:
+      name: mavenwebpod	
+	  labels:
+        app: mavenwebapp
+    spec:
+      containers:
+	  - name: mavenwebappcontainer
+        image: docker/maven-web-application:15
+        ports:
+        - containerPort: 8080
+---
+apiVersion: v1
+kind: service
+matadata:
+  name: mavenwebappsvc
+  namespace: test-ns
+spec:
+  type: Nodeport   
+  selector:
+    app: mavenwebapp
+	ports:
+	- port: 80
+	  targetport: 8080
+	  
+=================================================================================================
+=========================hpa======================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hpadeployment
+  labels:
+    name: hpadeployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      name: hpapod
+  template:
+    metadata:
+      labels:
+        name: hpapod
+    spec:
+      containers:
+      - name: hpacontainer
+        image: k8s.gcr.io/hpa-example
+        ports:
+        - name: http
+          containerPort: 80
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "64Mi"
+          limits:
+            cpu: "100m"
+            memory: "256Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hpaclusterservice
+  labels:
+    name: hpaservice
+spec:
+  ports:
+    - port: 80
+      targetPort: 80
+  selector:
+    name: hpapod
+  type: NodePort
+---    
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: hpadeploymentautoscaler
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: hpadeployment
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 40
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 40
+======================================================================================= delete pod create new as request
+kubectl run loadgenerator -i --tty --rm --image=busybox /bin/sh
+while true; do wget -q -O- http://hpaclusterservice:80; done
+===================================================================================	  
+	  mongodb:
+  uri: mongodb://${MONGO_DB_HOSTNAME}
+  host: ${MONGO_DB_HOSTNAME}
+  port: 27017
+  username: ${MONGO_DB_USERNAME}
+  password: ${MONGO_DB_PASSWORD}
+  database: users
+  authentication-database: admin
+======================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: springapp
+  namespace: test-ns
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: springapp
+  template:
+    metadata:
+      labels:
+        app: springapp
+    spec:
+      containers:
+        - name: springappcontainer
+          image: dockerhandson/spring-boot-mongo:1
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          ports:
+            - containerPort: 8080
+          env:
+            - name: MONGO_DB_HOSTNAME
+              value: mongosvc
+            - name: MONGO_DB_USERNAME
+              value: devdb
+            - name: MONGO_DB_PASSWORD
+              value: devdb@123
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: springappsvc
+  namespace: test-ns
+spec:
+  type: Nodeport
+  selector:
+    app: springapp
+  ports:
+    - port: 80
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: mongodb
+  namespace: test-ns
+spec:
+  selector:
+    matchLabels:
+      app: mongo
+  template:
+    metadata:
+      name: myapp
+      labels:
+        app: mongo
+    spec:
+      containers:
+        - name: mongodbcontainer
+          image: mongo
+          ports:
+            - containerPort: 27017
+          env:
+            - name: MONGO_INITDB_ROOT_USERNAME
+              value: devdb
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              value: devdb@123
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongosvc
+  namespace: test-ns
+spec:
+  type: ClusterIP
+  selector:
+    app: mongo
+  ports:
+    - port: 27017
+      targetPort: 27017
+===========================disk pressure====df -kh ========tocheck in node server place ==========ofter some time no dpresser==	  
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: mongodb
+  namespace: test-ns
+spec:
+  selector:
+    matchLabels:
+      app: mongo
+  template:
+    metadata:
+      name: myapp
+      labels:
+        app: mongo
+    spec:
+      containers:
+        - name: mongodbcontainer
+          image: mongo
+          ports:
+            - containerPort: 27017
+          env:
+            - name: MONGO_INITDB_ROOT_USERNAME
+              value: devdb
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              value: devdb@123
+          volumeMounts:
+            - name: mogodbvol
+              mountPath: /data/db
+      volumes:
+        - name: mogodbvol
+          nfs:
+            server: 172.31.47.141
+            path: /mnt/nfs_share
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongosvc
+  namespace: test-ns
+spec:
+  type: ClusterIP
+  selector:
+    app: mongo
+  ports:
+    - port: 27017
+      targetPort: 27017
+==============================================master,node1,node2=nfs server==================	  
+	  
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: mongodb
+  namespace: test-ns
+spec:
+  selector:
+    matchLabels:
+      app: mongo
+  template:
+    metadata:
+      labels:
+        app: mongo
+    spec:
+      containers:
+        - name: mongodbcontainer
+          image: mongo
+          ports:
+            - containerPort: 27017
+          env:
+            - name: MONGO_INITDB_ROOT_USERNAME
+              value: devdb
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              value: devdb@123
+          volumeMounts:
+            - name: mogodbvol
+              mountPath: /data/db
+      volumes:
+        - name: mogodbvol
+          hostPath:
+            path: /mongodb
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongosvc
+  namespace: test-ns
+spec:
+  type: ClusterIP
+  selector:
+    app: mongo
+  ports:
+    - port: 27017
+      targetPort: 27017
+=================================================hostpath===========================service above commone==========deploy add=
+
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: mongodb
+  namespace: test-ns
+spec:
+  selector:
+    matchLabels:
+      app: mongo
+  template:
+    metadata:
+      name: myapp
+      labels:
+        app: mongo
+    spec:
+      containers:
+        - name: mongodbcontainer
+          image: mongo
+          ports:
+            - containerPort: 27017
+          env:
+            - name: MONGO_INITDB_ROOT_USERNAME
+              value: devdb
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              value: devdb@123
+          volumeMounts:
+            - name: mogodbvol
+              mountPath: /data/db
+      volumes:
+        - name: mogodbvol
+          persistentVolumeClaim:
+            claimName: mongopvc
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongopvc
+  namespace: test-ns
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+=saparate carete PV below like==========
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: mongopv
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  nfs:
+    server: 172.31.47.141
+    path: /mnt/nfs_share
+====or ====
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: mongopv
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+    hostPath:
+	  path:mongodbdata
+=======================its take pvc==clime 	  
+==========================================================================
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: nfs-pod-provisioner-sa
+  namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: nfs-provisioner-ClusterRole
+rules:
+  - apiGroups: [""]
+    resources: ["persistentvolumes"]
+    verbs: ["get", "list", "watch", "create", "delete"]
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims"]
+    verbs: ["get", "list", "watch", "update"]
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["storageclasses"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: nfs-provisioner-rolebinding
+subjects:
+  - kind: ServiceAccount
+    name: nfs-pod-provisioner-sa
+    namespace: kube-system
+roleRef:
+  kind: ClusterRole
+  name: nfs-provisioner-ClusterRole
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: nfs-pod-provisioner-otherRoles
+  namespace: kube-system
+rules:
+  - apiGroups: [""]
+    resources: ["endpoints"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: nfs-pod-provisioner-otherRoles
+  namespace: kube-system
+subjects:
+  - kind: ServiceAccount
+    name: nfs-pod-provisioner-sa
+    namespace: kube-system
+roleRef:
+  kind: Role
+  name: nfs-pod-provisioner-otherRoles
+  apiGroup: rbac.authorization.k8s.io
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nfs-pod-provisioner
+  namespace: kube-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nfs-pod-provisioner
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: nfs-pod-provisioner
+    spec:
+      serviceAccountName: nfs-pod-provisioner-sa # name of service account created in rbac.yaml
+      containers:
+        - name: nfs-pod-provisioner
+          image: rkdevin/nfs-subdir-external-provisioner:fix-k8s-1.20
+          volumeMounts:
+            - name: nfs-provisioner-v
+              mountPath: /persistentvolumes
+          env:
+            - name: PROVISIONER_NAME
+              value: nfs-provisioner # SAME AS PROVISIONER NAME VALUE IN STORAGECLASS
+            - name: NFS_SERVER
+              value: 172.31.37.244 # IP of the NFS SERVER
+            - name: NFS_PATH
+              value: /mnt/share # Path to NFS directory setup
+      volumes:
+        - name: nfs-provisioner-v # same as volumeMounts name
+          nfs:
+            server: 172.31.37.244
+            path: /mnt/share
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: nfs-storageclass # IMPORTANT: PVC needs to mention this name
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "true"
+provisioner: nfs-provisioner # name can be anything but must match PROVISIONER_NAME
+parameters:
+  archiveOnDelete: "false"
+================================================= atach above frist craet then deploy create===== using storageclass===
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: springapp
+  namespace: test-ns
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: springapp
+  template:
+    metadata:
+      labels:
+        app: springapp
+    spec:
+      containers:
+        - name: springappcontainer
+          image: dockerhandson/spring-boot-mongo:1
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          ports:
+            - containerPort: 8080
+          env:
+            - name: MONGO_DB_HOSTNAME
+              value: mongosvc
+            - name: MONGO_DB_USERNAME
+              value: devdb
+            - name: MONGO_DB_PASSWORD
+              value: devdb@123
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: springappsvc
+  namespace: test-ns
+spec:
+  type: Nodeport
+  selector:
+    app: springapp
+  ports:
+    - port: 80
+      targetPort: 8080
+
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: mongodb
+  namespace: test-ns
+spec:
+  selector:
+    matchLabels:
+      app: mongo
+  template:
+    metadata:
+      name: myapp
+      labels:
+        app: mongo
+    spec:
+      containers:
+        - name: mongodbcontainer
+          image: mongo
+          ports:
+            - containerPort: 27017
+          env:
+            - name: MONGO_INITDB_ROOT_USERNAME
+              value: devdb
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              value: devdb@123
+          volumeMounts:
+            - name: mogodbvol
+              mountPath: /data/db
+      volumes:
+        - name: mogodbvol
+          persistentVolumeClaim:
+            claimName: mongopvc
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongopvc
+  namespace: test-ns
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongosvc
+  namespace: test-ns
+spec:
+  type: ClusterIP
+  selector:
+    app: mongo
+  ports:
+    - port: 27017
+      targetPort: 27017
+=================================================================
+================================== avove using create pv using storage calss we have link there======
+# Namespace for Jenkins
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: devops-ns
+  labels:
+    team: devops
+    tools: cicdtools
+---
+# Jenkins Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jenkinsdeployment
+  namespace: devops-ns
+spec:
+  selector:
+    matchLabels:
+      app: jenkins
+  template:
+    metadata:
+      labels:
+        app: jenkins
+    spec:
+      containers:
+        - name: jenkins
+          image: jenkins/jenkins:lts
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: jenkinsvol
+              mountPath: /var/jenkins_home
+      volumes:
+        - name: jenkinsvol
+          persistentVolumeClaim:
+            claimName: jenkinspvc
+---
+# PVC for Jenkins
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: jenkinspvc
+  namespace: devops-ns
+spec:
+  resources:
+    requests:
+      storage: 2Gi
+  accessModes:
+    - ReadWriteOnce
+---
+# Jenkins Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: jenkinssvc
+  namespace: devops-ns
+spec:
+  type: NodePort
+  selector:
+    app: jenkins
+  ports:
+    - port: 80
+      targetPort: 8080
+==========================================	  
+=======================================configmap and secrate==================
+apiVersion: v1
+kind: ConfigMap                        # u can write saparate file 
+metadata:
+  name: springappconfig
+  namespace: test-ns
+data:
+  mongodbusername: devdb
+  mongodbpassowrd: devdb@123
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: springapp
+  namespace: test-ns
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: springapp
+  template:
+    metadata:
+      labels:
+        app: springapp
+    spec:
+      containers:
+        - name: springappcontainer
+          image: dockerhandson/spring-boot-mongo:1
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          ports:
+            - containerPort: 8080
+          env:
+          - name: MONGO_DB_HOSTNAME
+              value: mongosvc
+          - name: MONGO_DB_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                   name: springappconfig
+                   key: mongodbusername
+          - name: MONGO_DB_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  name: springappconfig
+                  key: mongodbpassword
+				  
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: springappsvc
+  namespace: test-ns
+spec:
+  type: Nodeport
+  selector:
+    app: springapp
+  ports:
+    - port: 80
+      targetPort: 8080
+
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: mongodb
+  namespace: test-ns
+spec:
+  selector:
+    matchLabels:
+      app: mongo
+  template:
+    metadata:
+      name: myapp
+      labels:
+        app: mongo
+    spec:
+      containers:
+        - name: mongodbcontainer
+          image: mongo
+          ports:
+            - containerPort: 27017
+          env:
+          - name: MONGO_INITDB_ROOT_USERNAME
+          valueFrom:
+            configMapKeyRef:
+              name: springappconfig
+              key: mongodbusername    # ✅ Correct key for username
+          - name: MONGO_INITDB_ROOT_PASSWORD
+            valueFrom:
+              configMapKeyRef:
+                 name: springappconfig
+                 key: mongodbpassword    # ✅ Correct for password
+
+          volumeMounts:
+            - name: mogodbvol
+              mountPath: /data/db
+      volumes:
+        - name: mogodbvol
+          persistentVolumeClaim:
+            claimName: mongopvc
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongopvc
+  namespace: test-ns
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongosvc
+  namespace: test-ns
+spec:
+  type: ClusterIP
+  selector:
+    app: mongo
+  ports:
+    - port: 27017
+      targetPort: 27017
+=============================================================================end
+===========================configmap psswd below nat wirte in config create secrete =======================A
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: springappconfig
+  namespace: test-ns
+data:
+  mongodbusername: devdb
+---
+apiVersion: v1
+kind: Secret                                 # kubectl get secrate secratefile -o yaml -n test-ns
+metadata:
+  name: springappsecret
+  namespace: test-ns
+type: Opaque
+stringData:
+  # We can define multiple key-value pairs
+  mongodbpassword: devdb@123
+ ============================================continu below saparate yaml=============B
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: springapp
+  namespace: test-ns
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: springapp
+  template:
+    metadata:
+      labels:
+        app: springapp
+    spec:
+      containers:
+        - name: springappcontainer
+          image: dockerhandson/spring-boot-mongo:1
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          ports:
+            - containerPort: 8080
+          env:
+          - name: MONGO_DB_HOSTNAME
+              value: mongosvc
+          - name: MONGO_DB_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                   name: springappconfig
+                   key: mongodbusername
+          - name: MONGO_DB_PASSWORD
+              valueFrom:
+                secrateKeyRef:                       # to chenege to configmap to secrate
+                  name: springappsecret               # name
+                  key: mongodbpassword                 # pass name as same below 
+				  
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: springappsvc
+  namespace: test-ns
+spec:
+  type: Nodeport
+  selector:
+    app: springapp
+  ports:
+    - port: 80
+      targetPort: 8080
+
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: mongodb
+  namespace: test-ns
+spec:
+  selector:
+    matchLabels:
+      app: mongo
+  template:
+    metadata:
+      name: myapp
+      labels:
+        app: mongo
+    spec:
+      containers:
+        - name: mongodbcontainer
+          image: mongo
+          ports:
+            - containerPort: 27017
+          env:
+          - name: MONGO_INITDB_ROOT_USERNAME
+          valueFrom:
+            secrateKeyRef:                               # to chenege config map ref to secreate ref
+              name: springappsecret                      # secrate name give 
+              key: mongodbpassword                       # wer u write password that name  name give from secrate # ✅ Correct key for username
+          - name: MONGO_INITDB_ROOT_PASSWORD
+            valueFrom:
+              configMapKeyRef:
+                 name: springappconfig
+                 key: mongodbpassword    # ✅ Correct for password
+
+          volumeMounts:
+            - name: mogodbvol
+              mountPath: /data/db
+      volumes:
+        - name: mogodbvol
+          persistentVolumeClaim:
+            claimName: mongopvc
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongopvc
+  namespace: test-ns
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongosvc
+  namespace: test-ns
+spec:
+  type: ClusterIP
+  selector:
+    app: mongo
+  ports:
+    - port: 27017
+      targetPort: 27017
+===================================================================================================================================
+ =========================== tomcat ===============
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: javawebapp
+spec:
+  selector:
+    matchLabels:
+      app: javawebapp
+  template:
+    metadata:
+      labels:
+        app: javawebapp
+    spec:
+      containers:
+        - name: javawebapp
+          image: dockerhandson/java-web-app:1
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
+              memory: "256Mi"
+              cpu: "300m"
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: configmapvol
+              mountPath: "/usr/local/tomcat/conf/tomcat-users.xml"
+              subPath: "tomcat-users.xml"
+      volumes:
+        - name: configmapvol
+          configMap:
+            name: javawebapptomcatconf
+            items:
+              - key: "tomcat-users.xml"
+                path: "tomcat-users.xml"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: javawebappsvc
+spec:
+  type: NodePort
+  selector:
+    app: javawebapp
+  ports:
+    - port: 80
+      targetPort: 8080
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: javawebapptomcatconf
+data:
+  tomcat-users.xml: |
+    <?xml version="1.0" encoding="utf-8"?>
+    <tomcat-users xmlns="http://tomcat.apache.org/xml"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://tomcat.apache.org/xml tomcat-users.xsd"
+      version="1.0">
+      <user username="mithun" password="test" roles="admin-gui,manager-gui"/>
+    </tomcat-users>
+==========================================	  kubectl exec javawebapp-7b7f468-lxhfx -- cat /usr/local/tomcat/conf/tomcat-users.xml=============cg posswd ==pod del and apply see====end =test =ok=
+===========================================
+==========================================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: test-ns
+  labels:
+    team: devops
+    tools: cicdtools
+---
+apiVersion: apps/v1  # corrected from 'app/v1'
+kind: Deployment
+metadata:
+  name: mavenwebapp
+  namespace: test-ns
+spec:
+  replicas: 1
+  revisionHistoryLimit: 5  # spelling corrected
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  minReadySeconds: 30
+  selector:
+    matchLabels:
+      app: mavenwebapp
+  template:
+    metadata:
+      name: mavenwebpod
+      labels:
+        app: mavenwebapp
+    spec:
+      containers:
+      - name: mavenwebappcontainer
+        image: dockerhandson/mavenwebapplication:1
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "256Mi"
+          limits:
+            cpu: "500m"
+            memory: "256Mi"
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: hpadeploymentautoscaler
+  namespace: test-ns  # added namespace for HPA
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: mavenwebapp  # corrected target Deployment name
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 80
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 85
+---
+apiVersion: v1
+kind: Service
+metadata:   # spelling corrected from matadata
+  name: mavenwebappsvc
+  namespace: test-ns
+spec:
+  type: NodePort  # corrected spelling
+  selector:
+    app: mavenwebapp
+  ports:
+  - port: 80
+    targetPort: 8080
+=================================above tomcat test==========
+================================liveness ==========readyness================= its working code========
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: test-ns
+  labels:
+    team: devops
+    tools: cicdtools
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mavenwebapp
+  namespace: test-ns
+spec:
+  replicas: 1
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  minReadySeconds: 30
+  selector:
+    matchLabels:
+      app: mavenwebapp
+  template:
+    metadata:
+      name: mavenwebpod
+      labels:
+        app: mavenwebapp
+    spec:
+      containers:
+      - name: mavenwebappcontainer
+        image: dockerhandson/mavenwebapplication:1
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "256Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+        livenessProbe:
+          httpGet:
+            path: /maven-web-application/
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /maven-web-application/
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 5
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: hpadeploymentautoscaler
+  namespace: test-ns
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: mavenwebapp
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 80
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 85
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mavenwebappsvc
+  namespace: test-ns
+spec:
+  type: NodePort
+  selector:
+    app: mavenwebapp
+  ports:
+  - port: 80
+    targetPort: 8080
+========================kubectl exec mavenwebapp-6694cc845f-cp97m -n test-ns -- rm -r /usr/local/tomcat/webapps/maven-web-application.war======= delete thencheck liv readyness==its work ==ok=
+====================================================================================================================================================================mongodb
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: test-ns
+  labels:
+    team: devops
+    tools: cicdtools
+
+---
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mongod
+  namespace: test-ns
+spec:
+  serviceName: mongodb-service
+  replicas: 3
+  selector:
+    matchLabels:
+      app: mongod
+  template:
+    metadata:
+      labels:
+        app: mongod
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+        - name: mongodcontainer
+          image: mongo
+          command:
+            - "mongod"
+            - "--bind_ip"
+            - "0.0.0.0"
+            - "--replSet"
+            - "MainRepSet"
+          resources:
+            requests:
+              cpu: 200m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+          ports:
+            - containerPort: 27017
+          volumeMounts:
+            - name: mongodb-persistent-storage-claim
+              mountPath: "/data/db"
+  volumeClaimTemplates:
+    - metadata:
+        name: mongodb-persistent-storage-claim
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 1Gi
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb-service
+  namespace: test-ns
+spec:
+  clusterIP: None  # Headless Service
+  selector:
+    app: mongod
+  ports:
+    - port: 27017
+      targetPort: 27017
+===============================================================================momgo===============
+==========nodeselector================================================ frist create this label comm: kubectl label nodes node01 name=workerOne==============
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: javawebapp
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: javawebapp
+  template:
+    metadata:
+      labels:
+        app: javawebapp
+    spec:
+      nodeSelector:                # add nodeSelector
+        name: workerone             # manually create a label 'name=workerone' on the desired node
+      containers:
+        - name: javawebapp
+          image: dockerhandson/java-web-app:1
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
+              memory: "256Mi"
+              cpu: "300m"
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: configmapvol
+              mountPath: "/usr/local/tomcat/conf/tomcat-users.xml"
+              subPath: "tomcat-users.xml"
+      volumes:
+        - name: configmapvol
+          configMap:
+            name: javawebapptomcatconf
+            items:
+              - key: "tomcat-users.xml"
+                path: "tomcat-users.xml"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: javawebappsvc
+spec:
+  type: NodePort
+  selector:
+    app: javawebapp
+  ports:
+    - port: 80
+      targetPort: 8080
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: javawebapptomcatconf
+data:
+  tomcat-users.xml: |
+    <?xml version="1.0" encoding="utf-8"?>
+    <tomcat-users xmlns="http://tomcat.apache.org/xml"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://tomcat.apache.org/xml tomcat-users.xsd"
+      version="1.0">
+      <user username="mithun" password="test" roles="admin-gui,manager-gui"/>
+    </tomcat-users>
+=====================================================================================
+===================== nodeaffinity =================================================preferredDuringSchedulingIgnoredDuringExecution:=====
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: javawebapp
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: javawebapp
+  template:
+    metadata:
+      labels:
+        app: javawebapp
+    spec:
+      affinity:                         # corrected spelling (was afinity)
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 1                  # corrected spelling (was whait)
+              preference:
+                matchExpressions:        # corrected spelling (was matchexprations)
+                  - key: name
+                    operator: In         # corrected 'in' to 'In' (YAML is case sensitive)
+                    values:              # corrected spelling (was valus)
+                      - workerOne
+      containers:
+        - name: javawebapp
+          image: dockerhandson/java-web-app:1
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
+              memory: "256Mi"
+              cpu: "300m"
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: configmapvol
+              mountPath: "/usr/local/tomcat/conf/tomcat-users.xml"
+              subPath: "tomcat-users.xml"
+      volumes:
+        - name: configmapvol
+          configMap:
+            name: javawebapptomcatconf
+            items:
+              - key: "tomcat-users.xml"
+                path: "tomcat-users.xml"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: javawebappsvc
+spec:
+  type: NodePort
+  selector:
+    app: javawebapp
+  ports:
+    - port: 80
+      targetPort: 8080
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: javawebapptomcatconf
+data:
+  tomcat-users.xml: |
+    <?xml version="1.0" encoding="utf-8"?>
+    <tomcat-users xmlns="http://tomcat.apache.org/xml"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://tomcat.apache.org/xml tomcat-users.xsd"
+      version="1.0">
+      <user username="mithun" password="test" roles="admin-gui,manager-gui"/>
+    </tomcat-users>
+ 
+===========================================================================================================
+===================================================================================requiredDuringSchedulingIgnoredDuringExecution:==========
+===========================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: javawebapp
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: javawebapp
+  template:
+    metadata:
+      labels:
+        app: javawebapp
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: name
+                operator: In
+                values:
+                - workerone
+
+      containers:
+        - name: javawebapp
+          image: dockerhandson/java-web-app:1
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
+              memory: "256Mi"
+              cpu: "300m"
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: configmapvol
+              mountPath: "/usr/local/tomcat/conf/tomcat-users.xml"
+              subPath: "tomcat-users.xml"
+      volumes:
+        - name: configmapvol
+          configMap:
+            name: javawebapptomcatconf
+            items:
+              - key: "tomcat-users.xml"
+                path: "tomcat-users.xml"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: javawebappsvc
+spec:
+  type: NodePort
+  selector:
+    app: javawebapp
+  ports:
+    - port: 80
+      targetPort: 8080
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: javawebapptomcatconf
+data:
+  tomcat-users.xml: |
+    <?xml version="1.0" encoding="utf-8"?>
+    <tomcat-users xmlns="http://tomcat.apache.org/xml"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://tomcat.apache.org/xml tomcat-users.xsd"
+      version="1.0">
+      <user username="mithun" password="test" roles="admin-gui,manager-gui"/>
+    </tomcat-users>
+=========================================================================================================
+=============================== podaffinity and anti affinity ======================
+===========nginx.yaml==========
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginxpod
+  labels:
+    app: nginx
+spec:
+  containers:
+  - name: nginx
+    image: nginx
+    ports:
+    - containerPort: 80
+========================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: javawebapp
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: javawebapp
+  template:
+    metadata:
+      labels:
+        app: javawebapp
+    spec:
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - nginx
+            topologyKey: kubernetes.io/hostname
+      containers:
+      - name: javawebapp
+        image: dockerhandson/java-web-app:1
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "256Mi"
+            cpu: "300m"
+        ports:
+        - containerPort: 8080
+        volumeMounts:
+        - name: configmapvol
+          mountPath: "/usr/local/tomcat/conf/tomcat-users.xml"
+          subPath: "tomcat-users.xml"
+      volumes:
+      - name: configmapvol
+        configMap:
+          name: javawebapptomcatconf
+          items:
+          - key: "tomcat-users.xml"
+            path: "tomcat-users.xml"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: javawebappsvc
+spec:
+  type: NodePort
+  selector:
+    app: javawebapp
+  ports:
+  - port: 80
+    targetPort: 8080
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: javawebapptomcatconf
+data:
+  tomcat-users.xml: |
+    <?xml version="1.0" encoding="utf-8"?>
+    <tomcat-users xmlns="http://tomcat.apache.org/xml"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://tomcat.apache.org/xml tomcat-users.xsd"
+      version="1.0">
+      <user username="mithun" password="test" roles="admin-gui,manager-gui"/>
+    </tomcat-users>
+===========================================================================================podaffinity ====
+===========================================================================================podAntiAffinity=====
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginxpod
+  labels:
+    app: nginx
+spec:
+  containers:
+  - name: nginx
+    image: nginx
+    ports:
+    - containerPort: 80
+========================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: javawebapp
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: javawebapp
+  template:
+    metadata:
+      labels:
+        app: javawebapp
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - nginx
+            topologyKey: kubernetes.io/hostname
+      containers:
+      - name: javawebapp
+        image: dockerhandson/java-web-app:1
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "256Mi"
+            cpu: "300m"
+        ports:
+        - containerPort: 8080
+        volumeMounts:
+        - name: configmapvol
+          mountPath: "/usr/local/tomcat/conf/tomcat-users.xml"
+          subPath: "tomcat-users.xml"
+      volumes:
+      - name: configmapvol
+        configMap:
+          name: javawebapptomcatconf
+          items:
+          - key: "tomcat-users.xml"
+            path: "tomcat-users.xml"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: javawebappsvc
+spec:
+  type: NodePort
+  selector:
+    app: javawebapp
+  ports:
+  - port: 80
+    targetPort: 8080
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: javawebapptomcatconf
+data:
+  tomcat-users.xml: |
+    <?xml version="1.0" encoding="utf-8"?>
+    <tomcat-users xmlns="http://tomcat.apache.org/xml"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://tomcat.apache.org/xml tomcat-users.xsd"
+      version="1.0">
+      <user username="mithun" password="test" roles="admin-gui,manager-gui"/>
+    </tomcat-users>
+=============================================================================================================
+====================== taints===============
+kubectl describe nodes | grep "taints"
+===
+kubectl taint nodes node01 node=HatesPods:NoSchedule
+=========
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: test-ns
+  labels:
+    team: devops
+    tools: cicdtools
+---
+apiVersion: apps/v1  # corrected from 'app/v1'
+kind: Deployment
+metadata:
+  name: mavenwebapp
+  namespace: test-ns
+spec:
+  replicas: 1
+  revisionHistoryLimit: 5  # spelling corrected
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  minReadySeconds: 30
+  selector:
+    matchLabels:
+      app: mavenwebapp
+  template:
+    metadata:
+      name: mavenwebpod
+      labels:
+        app: mavenwebapp
+    spec:
+      containers:
+      - name: mavenwebappcontainer
+        image: dockerhandson/mavenwebapplication:1
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "256Mi"
+          limits:
+            cpu: "500m"
+            memory: "256Mi"
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: hpadeploymentautoscaler
+  namespace: test-ns  # added namespace for HPA
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: mavenwebapp  # corrected target Deployment name
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 80
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 85
+---
+apiVersion: v1
+kind: Service
+metadata:   # spelling corrected from matadata
+  name: mavenwebappsvc
+  namespace: test-ns
+spec:
+  type: NodePort  # corrected spelling
+  selector:
+    app: mavenwebapp
+  ports:
+  - port: 80
+    targetPort: 8080
+==========================================================================
+==========================tolarationsd===============
+	
+apiVersion: apps/v1  # corrected from 'app/v1'
+kind: Deployment
+metadata:
+  name: mavenwebapp
+  namespace: test-ns
+spec:
+  replicas: 1
+  revisionHistoryLimit: 5  # spelling corrected
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  minReadySeconds: 30
+  selector:
+    matchLabels:
+      app: mavenwebapp
+  template:
+    metadata:
+      name: mavenwebpod
+      labels:
+        app: mavenwebapp
+    spec:
+	  tolerations:
+      - key: node
+        operator: Equal
+        value: HatesPods
+        effect: NoSchedule
+      - key: node-role.kubernetes.io/master   # in master we can use it rm
+        operator: Exists                       # rm
+        effect: NoSchedule                      # rm
+      containers:
+      - name: mavenwebappcontainer
+        image: dockerhandson/mavenwebapplication:1
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "256Mi"
+          limits:
+            cpu: "500m"
+            memory: "256Mi"
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: hpadeploymentautoscaler
+  namespace: test-ns  # added namespace for HPA
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: mavenwebapp  # corrected target Deployment name
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 80
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 85
+---
+apiVersion: v1
+kind: Service
+metadata:   # spelling corrected from matadata
+  name: mavenwebappsvc
+  namespace: test-ns
+spec:
+  type: NodePort  # corrected spelling
+  selector:
+    app: mavenwebapp
+  ports:
+  - port: 80
+    targetPort: 8080
+===========================================
+remove taint ===kubectl taint nodes <nodeName> node=HatesPods:NoSchedule- =========
+ corden======== kubectl corden node01
+ drain==========kubectl draine node01
+ uncorden=======kubectluncorden node01
+=================================================================================================	
+=========================== resourcequota
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: test-ns
+  labels:
+    team: devops
+    tools: cicdtools
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: example-quota
+  namespace: test-ns   # corrected namespace to match the created namespace
+spec:
+  hard:
+    requests.cpu: "1"
+    requests.memory: "1Gi"
+    limits.cpu: "2"
+    limits.memory: "2Gi"
+	pods: 2                         # frist use 1 second use 2 pod check
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mavenwebapp
+  namespace: test-ns
+spec:
+  replicas: 2
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  minReadySeconds: 30
+  selector:
+    matchLabels:
+      app: mavenwebapp
+  template:
+    metadata:
+      name: mavenwebpod
+      labels:
+        app: mavenwebapp
+    spec:
+      tolerations:
+        - key: node
+          operator: Equal
+          value: HatesPods
+          effect: NoSchedule
+        - key: node-role.kubernetes.io/master
+          operator: Exists
+          effect: NoSchedule
+      containers:
+        - name: mavenwebappcontainer
+          image: dockerhandson/mavenwebapplication:1
+          ports:
+            - containerPort: 8080
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: hpadeploymentautoscaler
+  namespace: test-ns
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: mavenwebapp
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 80
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 85
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mavenwebappsvc
+  namespace: test-ns
+spec:
+  type: NodePort
+  selector:
+    app: mavenwebapp
+  ports:
+    - port: 80
+      targetPort: 8080
+================================================
+========================limitrange ===============
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: example-quota
+  namespace: test-ns   # corrected namespace to match the created namespace
+spec:
+  hard:
+    requests.cpu: "1"
+    requests.memory: "1Gi"
+    limits.cpu: "2"
+    limits.memory: "2Gi"
+	pods: 4                         # use 4
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: limitrange
+spec:
+  limits:
+  - type: Container
+    max:
+      cpu: "500m"
+      memory: "512Mi"
+    min:
+      cpu: "200m"
+      memory: "256Mi"
+---	  
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mavenwebapp
+  namespace: test-ns
+spec:
+  replicas: 2
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  minReadySeconds: 30
+  selector:
+    matchLabels:
+      app: mavenwebapp
+  template:
+    metadata:
+      name: mavenwebpod
+      labels:
+        app: mavenwebapp
+    spec:
+      tolerations:
+        - key: node
+          operator: Equal
+          value: HatesPods
+          effect: NoSchedule
+        - key: node-role.kubernetes.io/master
+          operator: Exists
+          effect: NoSchedule
+      containers:
+        - name: mavenwebappcontainer
+          image: dockerhandson/mavenwebapplication:1
+          ports:
+            - containerPort: 8080
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: hpadeploymentautoscaler
+  namespace: test-ns
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: mavenwebapp
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 80
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 85
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mavenwebappsvc
+  namespace: test-ns
+spec:
+  type: NodePort
+  selector:
+    app: mavenwebapp
+  ports:
+    - port: 80
+      targetPort: 8080
+==============================================================================
+============= network polices =================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: test-ns
+  labels:
+    team: devops
+    tools: cicdtools
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: springappconfig
+  namespace: test-ns
+data:
+  mongodbusername: devdb
+  mongodbpassword: devdb@123
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: springapp
+  namespace: test-ns
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: springapp
+  template:
+    metadata:
+      labels:
+        app: springapp
+    spec:
+      containers:
+        - name: springappcontainer
+          image: dockerhandson/spring-boot-mongo:1
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          ports:
+            - containerPort: 8080
+          env:
+            - name: MONGO_DB_HOSTNAME
+              value: mongosvc
+            - name: MONGO_DB_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: springappconfig
+                  key: mongodbusername
+            - name: MONGO_DB_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  name: springappconfig
+                  key: mongodbpassword
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: springappsvc
+  namespace: test-ns
+spec:
+  type: NodePort
+  selector:
+    app: springapp
+  ports:
+    - port: 80
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: mongodb
+  namespace: test-ns
+spec:
+  selector:
+    matchLabels:
+      app: mongo
+  template:
+    metadata:
+      labels:
+        app: mongo
+    spec:
+      containers:
+        - name: mongodbcontainer
+          image: mongo
+          ports:
+            - containerPort: 27017
+          env:
+            - name: MONGO_INITDB_ROOT_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: springappconfig
+                  key: mongodbusername
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  name: springappconfig
+                  key: mongodbpassword
+          volumeMounts:
+            - name: mongodbvol
+              mountPath: /data/db
+      volumes:
+        - name: mongodbvol
+          persistentVolumeClaim:
+            claimName: mongopvc
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongopvc
+  namespace: test-ns
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongosvc
+  namespace: test-ns
+spec:
+  type: ClusterIP
+  selector:
+    app: mongo
+  ports:
+    - port: 27017
+      targetPort: 27017
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: test-ns
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+----------------------------------------------------------------------------------------------------
+kubectl exec -it springapp-6946594b54-fnpkw -n test-ns -- sh
+--------------------------------------------------------------------
+============================network polices2===================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: test-ns
+  labels:
+    team: devops
+    tools: cicdtools
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: springappconfig
+  namespace: test-ns
+data:
+  mongodbusername: devdb
+  mongodbpassword: devdb@123
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: springappsecret
+  namespace: test-ns
+type: Opaque
+stringData:
+  mongodbpassword: devdb@123
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: springapp
+  namespace: test-ns
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: springapp
+  template:
+    metadata:
+      labels:
+        app: springapp
+    spec:
+      containers:
+        - name: springappcontainer
+          image: dockerhandson/spring-boot-mongo:1
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          ports:
+            - containerPort: 8080
+          env:
+          - name: MONGO_DB_HOSTNAME
+            value: mongosvc
+          - name: MONGO_DB_USERNAME
+            valueFrom:
+              configMapKeyRef:
+                name: springappconfig
+                key: mongodbusername
+          - name: MONGO_DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: springappsecret
+                key: mongodbpassword
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: springappsvc
+  namespace: test-ns
+spec:
+  type: NodePort
+  selector:
+    app: springapp
+  ports:
+    - port: 80
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: mongodb
+  namespace: test-ns
+spec:
+  selector:
+    matchLabels:
+      app: mongo
+  template:
+    metadata:
+      labels:
+        app: mongo
+    spec:
+      containers:
+        - name: mongodbcontainer
+          image: mongo
+          ports:
+            - containerPort: 27017
+          env:
+          - name: MONGO_INITDB_ROOT_USERNAME
+            valueFrom:
+              configMapKeyRef:
+                name: springappconfig
+                key: mongodbusername
+          - name: MONGO_INITDB_ROOT_PASSWORD
+            valueFrom:
+              configMapKeyRef:
+                name: springappconfig
+                key: mongodbpassword
+          volumeMounts:
+            - name: mogodbvol
+              mountPath: /data/db
+      volumes:
+        - name: mogodbvol
+          persistentVolumeClaim:
+            claimName: mongopvc
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongopvc
+  namespace: test-ns
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongosvc
+  namespace: test-ns
+spec:
+  type: ClusterIP
+  selector:
+    app: mongo
+  ports:
+    - port: 27017
+      targetPort: 27017
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: test-ns
+spec:
+  podSelector:
+    matchLabels:
+      app: mongo
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: springapp
+      ports:
+        - protocol: TCP
+          port: 27017
+=================================================================end
+===========loadbalancer
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: test-ns
+  labels:
+    team: devops
+    tools: cicdtools
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: springappconfig
+  namespace: test-ns
+data:
+  mongodbusername: devdb
+  mongodbpassword: devdb@123
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: springappsecret
+  namespace: test-ns
+type: Opaque
+stringData:
+  mongodbpassword: devdb@123
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: springapp
+  namespace: test-ns
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: springapp
+  template:
+    metadata:
+      labels:
+        app: springapp
+    spec:
+      containers:
+        - name: springappcontainer
+          image: dockerhandson/spring-boot-mongo:1
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          ports:
+            - containerPort: 8080
+          env:
+          - name: MONGO_DB_HOSTNAME
+            value: mongosvc
+          - name: MONGO_DB_USERNAME
+            valueFrom:
+              configMapKeyRef:
+                name: springappconfig
+                key: mongodbusername
+          - name: MONGO_DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: springappsecret
+                key: mongodbpassword
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: springappsvc
+  namespace: test-ns
+spec:
+  type: LoadBalancer
+  selector:
+    app: springapp
+  ports:
+    - port: 80
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: mongodb
+  namespace: test-ns
+spec:
+  selector:
+    matchLabels:
+      app: mongo
+  template:
+    metadata:
+      labels:
+        app: mongo
+    spec:
+      containers:
+        - name: mongodbcontainer
+          image: mongo
+          ports:
+            - containerPort: 27017
+          env:
+          - name: MONGO_INITDB_ROOT_USERNAME
+            valueFrom:
+              configMapKeyRef:
+                name: springappconfig
+                key: mongodbusername
+          - name: MONGO_INITDB_ROOT_PASSWORD
+            valueFrom:
+              configMapKeyRef:
+                name: springappconfig
+                key: mongodbpassword
+          volumeMounts:
+            - name: mogodbvol
+              mountPath: /data/db
+      volumes:
+        - name: mogodbvol
+          persistentVolumeClaim:
+            claimName: mongopvc
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongopvc
+  namespace: test-ns
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongosvc
+  namespace: test-ns
+spec:
+  type: ClusterIP
+  selector:
+    app: mongo
+  ports:
+    - port: 27017
+      targetPort: 27017	
+==================================loadbalancer ==pending==========
+=================nginx ingress controller =============================
+git clone https://github.com/kubernetes/ingress-nginx.git
+=============
+deployment demoneset
+====================
+kubectl apply -f deploy/static/provider/cloud/deploy.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: test-ns
+  labels:
+    team: devops
+    tools: cicdtools
+---	
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-ingress
+  namespace: nginx-ingress
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx-ingress
+  template:
+    metadata:
+      labels:
+        app: nginx-ingress
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9113"
+    spec:
+      serviceAccountName: nginx-ingress
+      containers:
+        - name: nginx-ingress
+          image: nginx/nginx-ingress:1.11.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 80
+            - name: https
+              containerPort: 443
+            - name: readiness-port
+              containerPort: 9113
+          readinessProbe:
+            httpGet:
+              path: /nginx-ready
+              port: readiness-port
+          securityContext:
+            allowPrivilegeEscalation: true
+            runAsUser: 101
+            capabilities:
+              add:
+                - NET_BIND_SERVICE
+          env:
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          args:
+            - -enable-custom-resources=false
+            - -nginx-configmaps=$(POD_NAMESPACE)/nginx-config
+            - -default-server-tls-secret=$(POD_NAMESPACE)/default-server-secret
+            - -report-ingress-status
+            - -external-service=nginx-ingress
+            - -enable-prometheus-metrics
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: nginx-ingress
+  namespace: nginx-ingress
+spec:
+  selector:
+    matchLabels:
+      app: nginx-ingress
+  template:
+    metadata:
+      labels:
+        app: nginx-ingress
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9113"
+    spec:
+      serviceAccountName: nginx-ingress
+      containers:
+        - name: nginx-ingress
+          image: nginx/nginx-ingress:1.11.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 80
+            - name: https
+              containerPort: 443
+            - name: readiness-port
+              containerPort: 9113
+          readinessProbe:
+            httpGet:
+              path: /nginx-ready
+              port: readiness-port
+          securityContext:
+            allowPrivilegeEscalation: true
+            runAsUser: 101
+            capabilities:
+              add:
+                - NET_BIND_SERVICE
+          env:
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          args:
+            - -enable-custom-resources=false
+            - -nginx-configmaps=$(POD_NAMESPACE)/nginx-config
+            - -default-server-tls-secret=$(POD_NAMESPACE)/default-server-secret
+            - -report-ingress-status
+            - -external-service=nginx-ingress
+            - -enable-prometheus-metrics
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-resource-1
+  namespace: default  # or your namespace
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: <DomainNameOne>  # Example: app.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: <serviceName>  # Example: my-service
+                port:
+                  number: 80
+====================================================================
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  namespace: mynamespace
+  name: example-role
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "watch", "list"]
+ ======================================A
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: example-rolebinding
+  namespace: mynamespace
+subjects:
+- kind: User
+  name: example-user
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role	
+  name: example-role
+  apiGroup: rbac.authorization.k8s.io
+==================================================AB
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: example-clusterrole
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "watch", "list"]
+=======================================A
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: example-clusterrolebinding
+subjects:
+- kind: User
+  name: example-user
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: example-clusterrole
+  apiGroup: rbac.authorization.k8s.io
+=========================================AB 
+
+ 
+
+
+
+
+	
+	
+
+	
